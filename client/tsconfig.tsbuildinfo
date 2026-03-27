@@ -1,0 +1,1 @@
+{"root":["./src/env.d.ts","./src/main.ts","./src/router/index.ts","./src/app.vue","./src/views/gameover.vue","./src/views/homepage.vue","./src/views/hostpage.vue","./src/views/joinpage.vue","./src/views/lobby.vue"],"version":"5.9.3"}
