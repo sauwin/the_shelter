@@ -5,28 +5,37 @@
       <h1>The Shelter</h1>
     </div>
     <div class="btn">
-      <button>
+      <button @click="goHost">
         Host game
       </button>
     </div>
     <div class="btn">
-      <button>
+      <button @click="goJoin">
         Join to game
       </button>
     </div>
   </div>
-  <!-- ця хуйня -->
   <div class="footer">
-    <a href="mailto:druziukmaksym@gmail.com"><img src="../icons/google.svg" /></a>
-    <a href="https://github.com/sauwin"><img src="../icons/github.svg" /></a>
-    <a href="https://www.facebook.com/druzuk.maxim/"><img src="../icons/facebook.svg" /></a>
-    <a href="https://www.instagram.com/druziuk.maksym/"><img src="../icons/instagram.svg" /></a>
+    <a href="mailto:druziukmaksym@gmail.com"><img src="@/assets/icons/google.svg" /></a>
+    <a href="https://github.com/sauwin"><img src="@/assets/icons/github.svg" /></a>
+    <a href="https://www.facebook.com/druzuk.maxim/"><img src="@/assets/icons/facebook.svg" /></a>
+    <a href="https://www.instagram.com/druziuk.maksym/"><img src="@/assets/icons/instagram.svg" /></a>
   </div>
 </div>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
+
+const goHost = () => {
+  router.push('/host')
+}
+
+const goJoin = () => {
+  router.push('/join')
+}
 </script>
 
 <style scoped>
@@ -43,9 +52,12 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: url('../assets/img/home.jpg') center/cover no-repeat;
-  filter: blur(6px) brightness(0.6);
+  background: url('../assets/img/home.jpg');
+  background-position: center;
+  background-size: cover;
+  filter: blur(4px) brightness(0.7);
   z-index: 0;
+  transform: scale(1.05);
 }
 
 .menu {
@@ -92,13 +104,23 @@
 
 }
 
+.footer {
+  position: absolute;
+  bottom: 25px;
+  left: 40px;
+  display: flex;
+  gap: 40px;
+  z-index: 1;
+}
+
 .footer img {
   width: 24px;
+  filter: brightness(0) invert(1);
   opacity: 0.7;
   transition: 0.2s;
 }
 
-.footer img:hover {
+.footer a:hover {
   opacity: 1;
   transform: scale(1.2);
 }
