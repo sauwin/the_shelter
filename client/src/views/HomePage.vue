@@ -70,7 +70,7 @@ const goJoin = () => {
 }
 
 .title h1 {
-  font-size: clamp(40px, 8vh, 100px);
+  font-size: 60px;
   letter-spacing: 14px;
   color: #ffffff;
   text-transform: uppercase;
