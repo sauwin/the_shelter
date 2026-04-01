@@ -8,8 +8,13 @@
       <h1>The shelter lobby</h1>
     </div>
     <div>
-      <h2>Code is: <br><br> <h1>BNK1111</h1></h2>
+      <div class="code" @click="copyCode()">{{ code }}</div>
     </div>
+    <br><br>
+    <div v-for="i in 5">
+      <hostPlayer/>
+    </div>
+    <br>
     <div>
       <button>Enter the lobby</button>
     </div>
@@ -19,6 +24,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import hostPlayer from '../components/hostPlayer.vue';
 
 const router = useRouter();
 
@@ -26,6 +32,12 @@ const router = useRouter();
 const goHome = () => {
   router.push('/')
 }
+
+const copyCode = () => {
+  navigator.clipboard.writeText(code)
+}
+
+const code = 'BNK4242'
 </script>
 
 <style scoped>
@@ -62,7 +74,7 @@ const goHome = () => {
   box-shadow: 0 0 30px rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.2);
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   justify-content: center;
   align-items: center;
   text-align: center;
@@ -135,5 +147,24 @@ const goHome = () => {
 .back-btn img {
   width: 18px;
   filter: invert(1);
+}
+
+.code {
+  display: inline-block;
+  padding: 12px 30px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  font-size: 30px;
+  letter-spacing: 8px;
+  font-weight: bold;
+  color: #fff;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.code:hover {
+  transform: scale(1.05);
 }
 </style>

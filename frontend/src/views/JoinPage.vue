@@ -11,7 +11,7 @@
       <label for="">Enter your name</label>
     </div>
     <div>
-      <input type="text" placeholder="John Garcia">
+      <input type="text" placeholder="John Pork">
     </div>
     
     <div>
