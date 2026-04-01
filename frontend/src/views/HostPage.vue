@@ -11,12 +11,16 @@
       <div class="code" @click="copyCode()">{{ code }}</div>
     </div>
     <br><br>
-    <div v-for="i in 5">
-      <hostPlayer/>
+    <div class="players">
+      <hostPlayer 
+        v-for="member in members" 
+        :key="member"
+        :name="member"
+      />
     </div>
     <br>
     <div>
-      <button>Enter the lobby</button>
+      <button @click="goGame()">Enter the lobby</button>
     </div>
   </div>
 </div>
@@ -33,11 +37,17 @@ const goHome = () => {
   router.push('/')
 }
 
+const goGame = () => {
+  router.push('/game')
+}
+
 const copyCode = () => {
   navigator.clipboard.writeText(code)
 }
 
 const code = 'BNK4242'
+
+const members = ['Sauwin','John Pork', 'Tim cheese', 'Simon Claw']
 </script>
 
 <style scoped>
@@ -166,5 +176,11 @@ const code = 'BNK4242'
 
 .code:hover {
   transform: scale(1.05);
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 </style>
