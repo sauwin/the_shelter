@@ -1,45 +1,62 @@
 <template>
-<div class="join">
-  <div class="panel">
-    <button class="back" @click="goHome()">
-      <img src="@/assets/icons/arrow-left.svg" />
-    </button>
-    <div>
+  <div class="join">
+    <div class="panel">
+      <button class="back" @click="router.push('/')">
+        <img src="@/assets/icons/arrow-left.svg" />
+      </button>
+
       <h1>Join to game</h1>
-    </div>
-    <div>
-      <label for="">Enter your name</label>
-    </div>
-    <div>
-      <input type="text" placeholder="John Pork">
-    </div>
-    
-    <div>
-      <label for="">Enter code from shelter</label>
-    </div>
-    <div>
-      <input type="text" placeholder="BNK4252">
-    </div>
-    <br>
-    <br>
-    <div>
-      <button @click="goHost()">Enter the lobby</button>
+
+      <label>Enter your name</label>
+      <input 
+        type="text" 
+        placeholder="John Pork" 
+        v-model="nameInput" 
+        maxlength="20"
+        @keyup.enter="join"
+      />
+
+      <label>Enter code from shelter</label>
+      <input 
+        type="text" 
+        placeholder="BNK4252" 
+        v-model="codeInput" 
+        maxlength="6"
+        @input="codeInput = codeInput.toUpperCase()"
+        @keyup.enter="join"
+      />
+
+      <p v-if="store.error" class="error-msg">{{ store.error }}</p>
+
+      <button @click="join" :disabled="!canJoin">Enter the lobby</button>
     </div>
   </div>
-</div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useGameStore } from '../stores/store';
 
 const router = useRouter();
+const store = useGameStore();
 
-const goHost = () => {
-  router.push('/host');
-}
+// Ініціалізація роутера в сторі для автоматичного переходу
+store.setRouter(router);
 
-const goHome = () => {
-  router.push('/')
+const nameInput = ref('');
+const codeInput = ref('');
+
+// Валідація від Клауда
+const canJoin = computed(() =>
+  nameInput.value.trim().length >= 2 && codeInput.value.trim().length === 6
+);
+
+const join = () => {
+  if (!canJoin.value) return;
+  store.error = ''; // скидаємо попередню помилку
+  store.joinRoom(nameInput.value.trim(), codeInput.value.trim());
+  // Навігація відбудеться автоматично через стор після успішного входу
 }
 </script>
 
@@ -83,6 +100,7 @@ const goHome = () => {
   color: white;
   text-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   font-family: 'Orbitron', sans-serif;
+  padding: 0 40px; /* Додав падінги, щоб інпути не липли до країв */
 }
 
 .panel h1 {
@@ -90,7 +108,17 @@ const goHome = () => {
   letter-spacing: 14px;
   color: #ffffff;
   text-transform: uppercase;
-  padding-bottom: 70px;
+  padding-bottom: 40px; /* Трохи зменшив, щоб влізла помилка, якщо буде */
+  text-align: center;
+}
+
+.panel label {
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: 0.8;
+  margin-bottom: -10px;
 }
 
 .panel input {
@@ -102,16 +130,16 @@ const goHome = () => {
   color: white;
   font-size: 18px;
   letter-spacing: 3px;
-  cursor: pointer;
   backdrop-filter: blur(5px);
-  transition: 0.25s;
-  padding: 10px;
+  transition: 0.25s ease;
+  padding: 0 15px;
+  outline: none;
 }
 
-.panel input:hover {
+.panel input:focus, .panel input:hover {
   background: white;
   color: black;
-  transform: scale(1.08);
+  transform: scale(1.03); /* Зробив 1.03 замість 1.08, щоб було акуратніше */
 }
 
 .panel button:not(.back) {
@@ -125,15 +153,19 @@ const goHome = () => {
   letter-spacing: 3px;
   cursor: pointer;
   backdrop-filter: blur(5px);
-  transition: 0.25s;
-  padding-left: 30px;
-  padding-right: 30px;
+  transition: 0.25s ease;
+  margin-top: 10px;
 }
 
-.panel button:not(.back):hover {
+.panel button:not(.back):hover:not(:disabled) {
   background: white;
   color: black;
-  transform: scale(1.08);
+  transform: scale(1.05);
+}
+
+.panel button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .back {
@@ -146,19 +178,29 @@ const goHome = () => {
   border-radius: 8px;
   cursor: pointer;
   background: rgba(255,255,255,0.1);
-  color: white;
-  font-size: 18px;
-  backdrop-filter: blur(5px);
-  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.25s ease;
 }
 
 .back:hover {
-  background: rgba(255,255,255,0.3);
   transform: scale(1.1);
 }
 
-.back-btn img {
+.back img {
   width: 18px;
   filter: invert(1);
+}
+
+.error-msg {
+  color: #ff6b6b;
+  font-size: 13px;
+  background: rgba(255, 0, 0, 0.15);
+  padding: 8px 15px;
+  border-radius: 8px;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 1px;
 }
 </style>

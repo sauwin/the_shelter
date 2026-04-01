@@ -25,11 +25,16 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'
+import { useGameStore } from '../stores/store'
 
 const router = useRouter();
+const store = useGameStore()
 
 const goHost = () => {
+  store.isHost = true
+  store.roomCode = ''
+  store.playerName = 'Host' // можна пізніше додати модалку з вводом імені
   router.push('/host')
 }
 
