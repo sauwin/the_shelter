@@ -51,7 +51,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import hostPlayer from '../components/hostPlayer.vue';
-import { useGameStore } from '../stores/store';
+import { useGameStore } from '@/stores/store';
 
 const router = useRouter();
 const store = useGameStore();

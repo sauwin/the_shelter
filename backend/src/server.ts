@@ -1,120 +1,145 @@
-import express from 'express'
-import http from 'http'
-import { Server, Socket } from 'socket.io'
-import cors from 'cors'
+import express from 'express';
+import http from 'http';
+import { Server, Socket } from 'socket.io';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const gameData = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../datas/perks.json'), 'utf8')
+);
+const bunkerData = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../datas/scenarios.json'), 'utf8')
+);
 
 interface Player {
-  id: string
-  name: string
-  isHost: boolean
+  id: string;
+  name: string;
+  isHost: boolean;
+  character?: any;
+  isExiled: boolean;
+  votes: number;
 }
 
 interface Room {
-  code: string
-  players: Player[]
+  code: string;
+  players: Player[];
+  status: 'lobby' | 'playing';
+  bunker?: any;
 }
 
-const rooms: Record<string, Room> = {}
+const app = express();
+app.use(cors());
 
-// Генерація унікального коду на СЕРВЕРІ
-const generateCode = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let code = ''
-  do {
-    code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  } while (rooms[code]) // гарантуємо унікальність
-  return code
-}
-
-const app = express()
-app.use(cors())
-
-const server = http.createServer(app)
-const io = new Server(server, { 
+const server = http.createServer(app);
+const io = new Server(server, {
   cors: { 
-    origin: "https://jw98wkq2-5173.euw.devtunnels.ms",
-    methods: ["GET", "POST"],
-    credentials: true
-  } 
-})
+    origin: "http://localhost:5173",
+    // origin: "https://jw98wkq2-5173.euw.devtunnels.ms",
+    methods: ["GET", "POST"] }
+});
+
+const rooms: Record<string, Room> = {};
+const getRandom = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
 
 io.on('connection', (socket: Socket) => {
-  console.log(`[+] Connected: ${socket.id}`)
+  console.log(`[+] Connected: ${socket.id}`);
 
-  // Хост створює кімнату
-  socket.on('create-room', (data: { name: string }) => {
-    const code = generateCode()
-
+  socket.on('create-room', ({ name }) => {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     rooms[code] = {
       code,
-      players: [{ id: socket.id, name: data.name, isHost: true }]
+      status: 'lobby',
+      players: [{ id: socket.id, name, isHost: true, isExiled: false, votes: 0 }]
+    };
+    socket.join(code);
+    socket.emit('room-created', code);
+    io.to(code).emit('update-players', rooms[code].players);
+  });
+
+  socket.on('join-room', ({ code, name }) => {
+    const room = rooms[code];
+    if (room && room.status === 'lobby') {
+      room.players.push({ id: socket.id, name, isHost: false, isExiled: false, votes: 0 });
+      socket.join(code);
+      socket.emit('joined-room', code);
+      io.to(code).emit('update-players', room.players);
+    } else {
+      socket.emit('room-error', 'Кімнату не знайдено або гра вже триває');
     }
+  });
 
-    socket.join(code)
+  socket.on('start-game', (code) => {
+    const room = rooms[code];
+    if (!room) return;
 
-    // Повертаємо код хосту
-    socket.emit('room-created', code)
-    // Оновлюємо список гравців у кімнаті
-    io.to(code).emit('update-players', rooms[code].players)
+    room.status = 'playing';
+    
+    room.bunker = {
+      scenario: getRandom(bunkerData.scenarios),
+      location: getRandom(bunkerData.locations),
+      duration: getRandom(bunkerData.duration),
+      capacity: bunkerData.capacity,
+    };
 
-    console.log(`[Room] Created: ${code} by ${data.name}`)
-  })
+    room.players.forEach(p => {
+      p.character = {};
+      Object.keys(gameData).forEach(key => {
+        p.character[key] = { 
+          val: getRandom(gameData[key]), 
+          open: false 
+        };
+      });
+    });
 
-  // Гравець приєднується до кімнати
-  socket.on('join-room', (data: { code: string; name: string }) => {
-    const room = rooms[data.code]
+    io.to(code).emit('game-started', { bunker: room.bunker, players: room.players });
+  });
 
-    if (!room) {
-      socket.emit('room-error', `Room "${data.code}" not found`)
-      return
+  socket.on('reveal-stat', ({ code, statKey }) => {
+    const room = rooms[code];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (player && player.character && player.character[statKey]) {
+      player.character[statKey].open = true;
+      io.to(code).emit('update-players', room.players);
     }
+  });
 
-    room.players.push({ id: socket.id, name: data.name, isHost: false })
-    socket.join(data.code)
+  socket.on('cast-vote', ({ code, targetId }) => {
+    const room = rooms[code];
+    if (!room) return;
+    const target = room.players.find(p => p.id === targetId);
+    if (target) {
+      target.votes++;
+      io.to(code).emit('update-players', room.players);
+    }
+  });
 
-    // Говоримо гравцю що він успішно приєднався (для навігації)
-    socket.emit('joined-room', data.code)
-    // Оновлюємо список у всій кімнаті
-    io.to(data.code).emit('update-players', room.players)
+  socket.on('finish-voting', (code) => {
+    const room = rooms[code];
+    if (!room) return;
 
-    console.log(`[Room] ${data.name} joined ${data.code}`)
-  })
+    const sorted = [...room.players].sort((a, b) => b.votes - a.votes);
+    const topTarget = sorted[0];
 
-  // Хост стартує гру
-  socket.on('start-game', (code: string) => {
-    const room = rooms[code]
-    if (!room) return
-
-    io.to(code).emit('game-started')
-    console.log(`[Room] Game started: ${code}`)
-  })
-
-  // Гравець відключився
-  socket.on('disconnecting', () => {
-    for (const roomCode of socket.rooms) {
-      const room = rooms[roomCode]
-      if (!room) continue
-
-      room.players = room.players.filter(p => p.id !== socket.id)
-
-      // Якщо хост пішов — передаємо хост наступному гравцю
-      if (room.players.length > 0 && !room.players.some(p => p.isHost)) {
-        room.players[0]!.isHost = true
+    if (topTarget && topTarget.votes > 0) {
+      const victim = room.players.find(p => p.id === topTarget.id);
+      
+      if (victim) {
+        victim.isExiled = true;
       }
-
-      // Якщо кімната порожня — видаляємо
-      if (room.players.length === 0) {
-        delete rooms[roomCode]
-        console.log(`[Room] Deleted empty room: ${roomCode}`)
-      } else {
-        io.to(roomCode).emit('update-players', room.players)
-      }
     }
 
-    console.log(`[-] Disconnected: ${socket.id}`)
-  })
-})
+    room.players.forEach(p => {
+      p.votes = 0;
+    });
 
-server.listen(3000, () => {
-  console.log('Server listening on http://localhost:3000')
-})
+    io.to(code).emit('update-players', room.players);
+  });
+});
+
+server.listen(3000, () => console.log('Server on http://localhost:3000'));
